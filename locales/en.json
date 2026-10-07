@@ -1,0 +1,238 @@
+{
+  "nav": {
+    "brand": "Shameem Ahmad",
+    "role": "Medical Interpreter",
+    "whatWeDo": "What We Do",
+    "specialties": "Specialties",
+    "hospitals": "Hospitals",
+    "doctors": "Doctors",
+    "reviews": "Reviews",
+    "about": "About",
+    "contact": "Contact",
+    "whatsapp": "WhatsApp Us"
+  },
+  "hero": {
+    "headline": "Clear Communication. Better Care.",
+    "subline": "Russian, Nepali & English medical interpreter for international patients at Delhi's top hospitals.",
+    "tagline": "Bridging Languages, Building Trust.",
+    "ctaWhatsapp": "Chat on WhatsApp",
+    "ctaConsultation": "Request a Free Consultation",
+    "trustText": "Serving patients from Russia, Nepal & Central Asia (Turkmenistan, Kazakhstan, Uzbekistan)",
+    "portraitAlt": "Shameem Ahmad - Medical Interpreter in Delhi NCR"
+  },
+  "whatWeDo": {
+    "title": "What We Do",
+    "subtitle": "Comprehensive medical coordination and professional translation services designed to make your treatment journey seamless.",
+    "items": [
+      {
+        "id": "communication",
+        "title": "Doctor–Patient Communication",
+        "desc": "Accurate, precise medical translation during consultation, ward rounds, and surgery briefings."
+      },
+      {
+        "id": "translation",
+        "title": "Medical Report Translation",
+        "desc": "Easy-to-understand explanation of diagnostic reports, prescriptions, and discharge summaries."
+      },
+      {
+        "id": "assistance",
+        "title": "Hospital Assistance",
+        "desc": "Full support from hospital registration, admission, billing clearance to final discharge."
+      },
+      {
+        "id": "cultural",
+        "title": "Cultural Support",
+        "desc": "Friendly, empathetic, and culturally aware assistance to ensure you feel at home."
+      },
+      {
+        "id": "availability",
+        "title": "24/7 Availability",
+        "desc": "Timely support for emergencies, night calls, and unexpected hospital requirements."
+      },
+      {
+        "id": "confidentiality",
+        "title": "Confidentiality & Patient Care",
+        "desc": "Strict medical privacy, compassionate guidance, and personal coordination at every step."
+      }
+    ]
+  },
+  "specialties": {
+    "title": "Medical Specialties",
+    "subtitle": "Expert interpretation and hospital coordination across premier clinical departments in Delhi NCR.",
+    "getEstimate": "Get Price Estimate",
+    "requestEstimate": "Request Estimate",
+    "viewDetails": "View Specialty Details",
+    "items": {
+      "oncology": {
+        "title": "Oncology",
+        "desc": "Comprehensive cancer care, surgical oncology, chemotherapy, radiation & immunotherapy."
+      },
+      "liver-transplant": {
+        "title": "Liver Transplant",
+        "desc": "Living & deceased donor liver transplant, pediatric transplant & complex hepatobiliary surgery."
+      },
+      "kidney-transplant": {
+        "title": "Kidney Transplant",
+        "desc": "Renal replacement therapy, donor evaluation, laparoscopic donor nephrectomy & post-transplant care."
+      },
+      "bone-marrow-transplantation": {
+        "title": "Bone Marrow Transplantation",
+        "desc": "Autologous & allogeneic BMT for leukemia, lymphoma, thalassemia & aplastic anemia."
+      },
+      "cardiology": {
+        "title": "Cardiology",
+        "desc": "Interventional cardiology, CABG heart bypass, valve replacement & pediatric cardiac surgery."
+      },
+      "orthopaedics": {
+        "title": "Orthopaedics",
+        "desc": "Robotic joint replacement, spine surgery, arthroscopy, complex trauma & sports medicine."
+      },
+      "oncohematology": {
+        "title": "Oncohematology",
+        "desc": "Advanced treatment for blood cancers, multiple myeloma, lymphoma & myelodysplastic syndromes."
+      },
+      "neurosurgery": {
+        "title": "Neurosurgery",
+        "desc": "Brain tumor excision, stroke management, minimally invasive neurosurgery & aneurysm repair."
+      },
+      "spinal-surgery": {
+        "title": "Spinal Surgery",
+        "desc": "Disc replacement, scoliosis correction, spinal fusion & minimally invasive spine interventions."
+      },
+      "ophthalmology": {
+        "title": "Ophthalmology",
+        "desc": "Lasik, corneal transplant, cataract surgery, vitreoretinal procedures & pediatric eye care."
+      },
+      "diabetes": {
+        "title": "Diabetes Mellitus",
+        "desc": "Comprehensive metabolic checkups, insulin pump therapy, diabetic foot care & endocrinology."
+      },
+      "full-body-checkup": {
+        "title": "Full Body Checkup",
+        "desc": "Executive preventative health packages, advanced imaging, cardiac screening & blood panels."
+      },
+      "ent": {
+        "title": "ENT & Skull Base Surgery",
+        "desc": "Cochlear implants, sinus surgery, head & neck oncology, hearing & balance treatment."
+      },
+      "gynaecology": {
+        "title": "Gynaecology",
+        "desc": "Preconception care, high-risk pregnancy, hormonal management & minimally invasive gynaec surgery."
+      }
+    }
+  },
+  "hospitals": {
+    "title": "Best Healthcare Services in Delhi NCR",
+    "subtitle": "Direct coordination with top JCI & NABH accredited hospital networks."
+  },
+  "doctors": {
+    "title": "Doctors I Work With",
+    "subtitle": "Facilitating communication with world-renowned directors and senior consultants.",
+    "interpreterCaption": "Shameem Ahmad · Interpreter & International Patient Support"
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "subtitle": "A structured, stress-free pathway from initial inquiry to post-treatment recovery.",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Send Medical Reports",
+        "desc": "Share your medical history, diagnostic reports, and current symptoms via WhatsApp or email."
+      },
+      {
+        "number": "02",
+        "title": "Doctor Opinion & Estimate",
+        "desc": "We obtain treatment opinions and tentative cost breakdowns from top hospital specialists."
+      },
+      {
+        "number": "03",
+        "title": "Visa & Invitation Letter",
+        "desc": "Assistance with official hospital medical visa invitation letters and travel coordination."
+      },
+      {
+        "number": "04",
+        "title": "Arrival, Treatment & Discharge",
+        "desc": "Airport greeting, full in-person interpretation during treatment, and post-discharge follow-up."
+      }
+    ]
+  },
+  "whyChoose": {
+    "title": "Why Choose Me",
+    "subtitle": "Dedicated language bridge ensuring safety, comfort, and clinical accuracy.",
+    "quote": "\"Communication Makes Care Better.\"",
+    "points": [
+      {
+        "title": "Accurate Interpretation",
+        "desc": "Flawless technical translation of medical terms so no detail is lost."
+      },
+      {
+        "title": "Patient Friendly",
+        "desc": "Compassionate, warm, and supportive care for patients and family members."
+      },
+      {
+        "title": "Strict Confidentiality",
+        "desc": "Your medical history and personal documents are treated with utmost privacy."
+      },
+      {
+        "title": "Cultural Understanding",
+        "desc": "Deep cultural familiarity with Russian-speaking and South Asian international guests."
+      },
+      {
+        "title": "Trusted Interpreter",
+        "desc": "Years of experience at Delhi NCR's top multi-specialty hospitals."
+      }
+    ]
+  },
+  "reviews": {
+    "title": "Patient Testimonials",
+    "subtitle": "Feedback from international patients who received care in Delhi NCR.",
+    "placeholderNotice": "Verified Patient Feedback",
+    "galleryTitle": "Our Patients",
+    "gallerySubtitle": "Moments of successful care and journey support in Delhi NCR."
+  },
+  "about": {
+    "title": "About Shameem Ahmad",
+    "subtitle": "Professional Russian, Nepali & English Medical Interpreter based in Delhi NCR, India.",
+    "bio1": "Hello, I am Shameem Ahmad. I specialize in medical interpretation and international patient coordination at top hospitals across Delhi NCR (Max, Artemis, Fortis, Apollo, Medanta, and Yatharth).",
+    "bio2": "Having guided hundreds of patients from Russia, Nepal, Turkmenistan, Kazakhstan, Uzbekistan, and beyond, I ensure language is never a barrier to receiving world-class treatment in India.",
+    "quote": "Health is the key of happiness.",
+    "languagesTitle": "Languages Spoken",
+    "languages": ["Russian (Русский)", "Nepali (नेपाली)", "English", "Hindi / Urdu"]
+  },
+  "contact": {
+    "title": "Contact & Request Consultation",
+    "subtitle": "Get direct medical opinions, cost estimates, and interpreter booking within 24 hours.",
+    "phone": "Phone / WhatsApp / Viber / IMO",
+    "email": "Email Address",
+    "location": "Location",
+    "locationValue": "Delhi NCR (New Delhi, Gurgaon, Noida, Faridabad), India",
+    "form": {
+      "name": "Full Name",
+      "country": "Country of Origin",
+      "language": "Preferred Language",
+      "specialty": "Medical Specialty Needed",
+      "message": "Brief Medical History or Message",
+      "file": "Attach Medical Reports (PDF, JPG, PNG - optional)",
+      "submit": "Send Request via WhatsApp / Email",
+      "sending": "Sending...",
+      "success": "Thank you! Your request has been received. Shameem will contact you shortly.",
+      "error": "Failed to send request. Please contact directly via WhatsApp at +91 81783 00511."
+    }
+  },
+  "footer": {
+    "bio": "Shameem Ahmad provides professional Russian, Nepali, and English medical interpretation and patient coordination services in Delhi NCR, India.",
+    "quickLinks": "Quick Links",
+    "connect": "Connect With Me",
+    "disclaimer": "Medical Disclaimer: Shameem Ahmad provides independent language interpretation and hospital coordination services and is not a medical provider. Hospital names and logos belong to their respective owners.",
+    "copyright": "All rights reserved."
+  },
+  "specialtyDetail": {
+    "backToSpecialties": "← Back to All Specialties",
+    "overviewTitle": "Overview",
+    "proceduresTitle": "Typical Procedures & Treatments",
+    "processTitle": "7-Step Care Pathway",
+    "faqTitle": "Frequently Asked Questions",
+    "enquiryTitle": "Request Cost Estimate & Opinion",
+    "enquirySubtitle": "Upload reports to receive doctor recommendation and estimate."
+  }
+}

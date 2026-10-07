@@ -1,0 +1,65 @@
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { name, country, language, specialty, message, fileName } = body;
+
+    if (!name || !message) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const accessKey = process.env.WEB3FORMS_ACCESS_KEY;
+
+    if (accessKey) {
+      // 100% Free Email Delivery via Web3Forms (Delivers directly to your Gmail)
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: accessKey,
+          subject: `🏥 New Patient Inquiry: ${name} (${country})`,
+          from_name: 'Shameem Website Inquiry',
+          to_email: 'shameemahmadaams@gmail.com',
+          Patient_Name: name,
+          Country: country,
+          Preferred_Language: language,
+          Medical_Specialty: specialty,
+          Medical_Message: message,
+          Attached_Report_File: fileName || 'No file attached',
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        console.error('Web3Forms email delivery error:', data);
+      }
+    } else {
+      console.log('Received Patient Inquiry (Set WEB3FORMS_ACCESS_KEY in .env.local to receive instant Gmail emails):', {
+        name,
+        country,
+        language,
+        specialty,
+        message,
+        fileName,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Return success response to client
+    return NextResponse.json({
+      success: true,
+      message: 'Inquiry received successfully. Shameem Ahmad will contact you shortly.',
+    });
+  } catch (error) {
+    console.error('Contact API Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
