@@ -211,6 +211,8 @@
       "country": "Country of Origin",
       "language": "Preferred Language",
       "specialty": "Medical Specialty Needed",
+      "otherOption": "Other / Other Specialty",
+      "specifySpecialty": "Please specify your medical condition or department",
       "message": "Brief Medical History or Message",
       "file": "Attach Medical Reports (PDF, JPG, PNG - optional)",
       "submit": "Send Request via WhatsApp / Email",

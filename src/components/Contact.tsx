@@ -13,16 +13,26 @@ export const Contact: React.FC = () => {
     name: '',
     country: '',
     language: 'English',
-    specialty: 'Oncology',
+    specialty: specialtiesData[0]?.en?.title || 'Oncology (Cancer Care)',
     message: '',
   });
 
+  const [customSpecialty, setCustomSpecialty] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+
+  const getEffectiveSpecialty = () => {
+    if (formData.specialty === 'Other') {
+      return customSpecialty.trim() ? `Other (${customSpecialty.trim()})` : 'Other';
+    }
+    return formData.specialty;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('sending');
+
+    const effectiveSpecialty = getEffectiveSpecialty();
 
     try {
       // Send data to Next.js API route
@@ -31,6 +41,7 @@ export const Contact: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          specialty: effectiveSpecialty,
           fileName: file ? file.name : undefined,
         }),
       });
@@ -46,10 +57,11 @@ export const Contact: React.FC = () => {
   };
 
   const handleWhatsappFallback = () => {
+    const effectiveSpecialty = getEffectiveSpecialty();
     const text = encodeURIComponent(
       `Hello Shameem! My name is ${formData.name || 'Patient'} from ${formData.country || 'International'}.\n` +
       `Preferred Language: ${formData.language}\n` +
-      `Specialty Needed: ${formData.specialty}\n` +
+      `Specialty Needed: ${effectiveSpecialty}\n` +
       `Message: ${formData.message}`
     );
     window.open(`https://wa.me/918178300511?text=${text}`, '_blank');
@@ -221,9 +233,39 @@ export const Contact: React.FC = () => {
                         {s[language]?.title || s.en.title}
                       </option>
                     ))}
+                    <option value="Other">
+                      {t('contact.form.otherOption')}
+                    </option>
                   </select>
                 </div>
               </div>
+
+              {/* Custom Specialty input if "Other" is selected */}
+              {formData.specialty === 'Other' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-1.5"
+                >
+                  <label className="block text-xs font-semibold text-brand-navy">
+                    {t('contact.form.specifySpecialty')} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customSpecialty}
+                    onChange={(e) => setCustomSpecialty(e.target.value)}
+                    placeholder={
+                      language === 'ru'
+                        ? 'например: Стоматология, Педиатрия, ЭКО и др.'
+                        : language === 'ne'
+                        ? 'जस्तै: दन्त सेवा, बालरोग, आईभीएफ, इत्यादि'
+                        : 'e.g. Dental Surgery, IVF Fertility, Pediatrics, etc.'
+                    }
+                    className="w-full px-4 py-3 rounded-xl bg-[#FAFAF8] border border-brand-teal text-sm focus:bg-white focus:ring-2 focus:ring-brand-teal/20 transition-all outline-none"
+                  />
+                </motion.div>
+              )}
 
               {/* Message */}
               <div>
