@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { SiteContentProvider } from '@/context/SiteContentContext';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://shameemmedinterpreter.com'),
@@ -112,6 +113,7 @@ export default function RootLayout({
           <SiteContentProvider>{children}</SiteContentProvider>
         </LanguageProvider>
       </body>
+      <GoogleAnalytics gaId="G-V3J5CYT5X3" />
     </html>
   );
 }
