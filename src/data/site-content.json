@@ -121,7 +121,7 @@
       "name": "Dr. Suman Lal",
       "title": "Principal Director & Unit Head - Obstetrics and Gynecology, Robotic Surgery, Gynaecologic Laparoscopy, Pregnancy Management",
       "hospital": " Max Super Specialty Hospital, Gurugram",
-      "image": "/uploads/Dr__Suman_Lal-1792036787643.jpg",
+      "image": "/uploads/Dr__Suman_Lal-1792037860273.jpg",
       "specialties": [
         "Obstetrics and Gynecology",
         "Robotic Surgery",
@@ -132,6 +132,19 @@
         "Advanced Laparoscopic Surgery"
       ],
       "id": "doc-1792036829753"
+    },
+    {
+      "name": "Dr. Chandrika Verma",
+      "title": "Consultant, Paediatric Haemato-Oncology & Bone Marrow Transplant",
+      "hospital": "Max Healthcare",
+      "image": "/uploads/doc-dr-chandrika-verma-1792037911834.jpg",
+      "specialties": [
+        "Pediatric Haemato-Oncology",
+        "Bone Marrow Transplant",
+        "Pediatric Oncology",
+        "Pediatrics"
+      ],
+      "id": "doc-1792038006556"
     }
   ],
   "hospitals": [

@@ -33,7 +33,7 @@ export const DoctorsSection: React.FC = () => {
         <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-x-auto hide-scrollbar snap-x pb-4 md:pb-0">
           {doctorsList.map((doc, idx) => (
             <motion.div
-              key={doc.name}
+              key={doc.id || `${doc.name}-${idx}`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

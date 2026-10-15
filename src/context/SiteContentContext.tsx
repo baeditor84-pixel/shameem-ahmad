@@ -26,25 +26,34 @@ interface SiteContentContextType {
   addDoctor: (doctor: Omit<DoctorItem, 'id'>) => void;
   updateDoctor: (id: string, doctor: Partial<DoctorItem>) => void;
   deleteDoctor: (id: string) => void;
+  moveDoctor: (id: string, direction: 'up' | 'down') => void;
+  reorderDoctors: (fromIndex: number, toIndex: number) => void;
+  setDoctorsOrder: (newDoctors: DoctorItem[]) => void;
 
   // Hospitals
   addHospital: (hospital: Omit<HospitalItem, 'id'>) => void;
   updateHospital: (id: string, hospital: Partial<HospitalItem>) => void;
   deleteHospital: (id: string) => void;
+  moveHospital: (id: string, direction: 'up' | 'down') => void;
 
   // Testimonials
   addTestimonial: (item: Omit<TestimonialItem, 'id'>) => void;
   updateTestimonial: (id: string, item: Partial<TestimonialItem>) => void;
   deleteTestimonial: (id: string) => void;
+  moveTestimonial: (id: string, direction: 'up' | 'down') => void;
 
   // Patient Photos Gallery
   addPatientPhoto: (photo: Omit<PatientPhotoItem, 'id'>) => void;
   updatePatientPhoto: (id: string, photo: Partial<PatientPhotoItem>) => void;
   deletePatientPhoto: (id: string) => void;
+  movePatientPhoto: (id: string, direction: 'up' | 'down') => void;
 
   // Hero & Contact Settings
   updateHero: (hero: Partial<HeroSettings>) => void;
   updateContact: (contact: Partial<ContactSettings>) => void;
+
+  // Admin Security
+  updateAdminPassword: (newPassword: string) => Promise<boolean>;
 
   // Inquiries
   updateInquiryStatus: (id: string, status: 'new' | 'contacted' | 'resolved') => void;
@@ -202,6 +211,54 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     saveChanges(updated);
   };
 
+  const moveDoctor = (id: string, direction: 'up' | 'down') => {
+    const index = siteData.doctors.findIndex((d) => d.id === id);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= siteData.doctors.length) return;
+
+    const newDocs = [...siteData.doctors];
+    const [moved] = newDocs.splice(index, 1);
+    newDocs.splice(targetIndex, 0, moved);
+
+    const updated = {
+      ...siteData,
+      doctors: newDocs,
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
+  const reorderDoctors = (fromIndex: number, toIndex: number) => {
+    if (
+      fromIndex < 0 ||
+      fromIndex >= siteData.doctors.length ||
+      toIndex < 0 ||
+      toIndex >= siteData.doctors.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+    const newDocs = [...siteData.doctors];
+    const [moved] = newDocs.splice(fromIndex, 1);
+    newDocs.splice(toIndex, 0, moved);
+    const updated = {
+      ...siteData,
+      doctors: newDocs,
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
+  const setDoctorsOrder = (newDoctors: DoctorItem[]) => {
+    const updated = {
+      ...siteData,
+      doctors: newDoctors,
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
   // Hospitals CRUD
   const addHospital = (hosp: Omit<HospitalItem, 'id'>) => {
     const newHosp: HospitalItem = {
@@ -229,6 +286,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const updated = {
       ...siteData,
       hospitals: siteData.hospitals.filter((h) => h.id !== id),
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
+  const moveHospital = (id: string, direction: 'up' | 'down') => {
+    const index = siteData.hospitals.findIndex((h) => h.id === id);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= siteData.hospitals.length) return;
+
+    const newHosps = [...siteData.hospitals];
+    const [moved] = newHosps.splice(index, 1);
+    newHosps.splice(targetIndex, 0, moved);
+
+    const updated = {
+      ...siteData,
+      hospitals: newHosps,
     };
     setSiteData(updated);
     saveChanges(updated);
@@ -266,6 +341,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     saveChanges(updated);
   };
 
+  const moveTestimonial = (id: string, direction: 'up' | 'down') => {
+    const index = siteData.testimonials.findIndex((t) => t.id === id);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= siteData.testimonials.length) return;
+
+    const newTests = [...siteData.testimonials];
+    const [moved] = newTests.splice(index, 1);
+    newTests.splice(targetIndex, 0, moved);
+
+    const updated = {
+      ...siteData,
+      testimonials: newTests,
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
   // Patient Photos CRUD
   const addPatientPhoto = (photo: Omit<PatientPhotoItem, 'id'>) => {
     const newPhoto: PatientPhotoItem = {
@@ -298,6 +391,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     saveChanges(updated);
   };
 
+  const movePatientPhoto = (id: string, direction: 'up' | 'down') => {
+    const index = siteData.patientPhotos.findIndex((p) => p.id === id);
+    if (index === -1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= siteData.patientPhotos.length) return;
+
+    const newPhotos = [...siteData.patientPhotos];
+    const [moved] = newPhotos.splice(index, 1);
+    newPhotos.splice(targetIndex, 0, moved);
+
+    const updated = {
+      ...siteData,
+      patientPhotos: newPhotos,
+    };
+    setSiteData(updated);
+    saveChanges(updated);
+  };
+
   // Hero & Contact Settings
   const updateHero = (heroUpdates: Partial<HeroSettings>) => {
     const updated = {
@@ -315,6 +426,15 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
     setSiteData(updated);
     saveChanges(updated);
+  };
+
+  const updateAdminPassword = async (newPassword: string): Promise<boolean> => {
+    const updated = {
+      ...siteData,
+      adminPassword: newPassword,
+    };
+    setSiteData(updated);
+    return await saveChanges(updated);
   };
 
   // Inquiries
@@ -411,17 +531,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         addDoctor,
         updateDoctor,
         deleteDoctor,
+        moveDoctor,
+        reorderDoctors,
+        setDoctorsOrder,
         addHospital,
         updateHospital,
         deleteHospital,
+        moveHospital,
         addTestimonial,
         updateTestimonial,
         deleteTestimonial,
+        moveTestimonial,
         addPatientPhoto,
         updatePatientPhoto,
         deletePatientPhoto,
+        movePatientPhoto,
         updateHero,
         updateContact,
+        updateAdminPassword,
         updateInquiryStatus,
         deleteInquiry,
         exportBackup,

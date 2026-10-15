@@ -2,20 +2,51 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const contentType = request.headers.get('content-type') || '';
+    let buffer: Buffer;
+    let originalName = 'uploaded-image.jpg';
 
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
+
+      if (!file) {
+        return NextResponse.json({ success: false, error: 'No file found in upload form data' }, { status: 400 });
+      }
+
+      originalName = file.name || 'uploaded-image.jpg';
+      const bytes = await file.arrayBuffer();
+      buffer = Buffer.from(bytes);
+    } else if (contentType.includes('application/json')) {
+      const body = await request.json();
+      const { base64, filename } = body;
+
+      if (!base64) {
+        return NextResponse.json({ success: false, error: 'No base64 image data provided' }, { status: 400 });
+      }
+
+      originalName = filename || 'uploaded-image.jpg';
+      const cleanBase64 = base64.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, '');
+      buffer = Buffer.from(cleanBase64, 'base64');
+    } else {
+      // Direct binary stream
+      const bytes = await request.arrayBuffer();
+      if (!bytes || bytes.byteLength === 0) {
+        return NextResponse.json({ success: false, error: 'Empty file payload' }, { status: 400 });
+      }
+      buffer = Buffer.from(bytes);
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    if (!buffer || buffer.length === 0) {
+      return NextResponse.json({ success: false, error: 'Uploaded file is empty (0 bytes)' }, { status: 400 });
+    }
 
     // Sanitize filename and create unique name
-    const originalName = file.name || 'image.jpg';
     const ext = path.extname(originalName) || '.jpg';
     const cleanBase = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
     const uniqueFilename = `${cleanBase}-${Date.now()}${ext.toLowerCase()}`;
@@ -29,13 +60,21 @@ export async function POST(request: Request) {
     fs.writeFileSync(filePath, buffer);
 
     const publicUrl = `/uploads/${uniqueFilename}`;
+
     return NextResponse.json({
       success: true,
       url: publicUrl,
       filename: uniqueFilename,
+      size: buffer.length,
     });
-  } catch (error) {
-    console.error('File upload error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to upload image' }, { status: 500 });
+  } catch (error: any) {
+    console.error('File upload error in /api/upload:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error?.message || 'Server error while writing uploaded file',
+      },
+      { status: 500 }
+    );
   }
 }

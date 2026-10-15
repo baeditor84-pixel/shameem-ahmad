@@ -37,12 +37,86 @@ import {
   Phone,
   Check,
   Eye,
+  EyeOff,
+  Lock,
+  Key,
   RefreshCw,
   GitBranch,
   Rocket,
   Terminal,
   Globe,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
+  ListOrdered,
 } from 'lucide-react';
+
+// Fast client-side image compression for phone/DSLR camera uploads
+async function compressImageClient(file: File, maxDim = 1600, quality = 0.88): Promise<File> {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
+      return resolve(file);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              return resolve(file);
+            }
+            const cleanName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+            const optimizedFile = new File([blob], cleanName, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(optimizedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+}
 
 export default function AdminPage() {
   const {
@@ -56,17 +130,24 @@ export default function AdminPage() {
     addDoctor,
     updateDoctor,
     deleteDoctor,
+    moveDoctor,
+    reorderDoctors,
+    setDoctorsOrder,
     addHospital,
     updateHospital,
     deleteHospital,
+    moveHospital,
     addTestimonial,
     updateTestimonial,
     deleteTestimonial,
+    moveTestimonial,
     addPatientPhoto,
     updatePatientPhoto,
     deletePatientPhoto,
+    movePatientPhoto,
     updateHero,
     updateContact,
+    updateAdminPassword,
     updateInquiryStatus,
     deleteInquiry,
     exportBackup,
@@ -80,10 +161,16 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
 
+  // Password Change Modal State
+  const [passwordModalOpen, setPasswordModalOpen] = useState<boolean>(false);
+
   // Active Tab
   const [activeTab, setActiveTab] = useState<
     'doctors' | 'hospitals' | 'patients' | 'settings' | 'inquiries' | 'media' | 'git'
   >('doctors');
+
+  // Doctor Reorder Mode
+  const [doctorReorderMode, setDoctorReorderMode] = useState<boolean>(false);
 
   // Git / GitHub & Vercel Sync State
   const [gitInfo, setGitInfo] = useState<{
@@ -100,7 +187,9 @@ export default function AdminPage() {
   const [syncResponse, setSyncResponse] = useState<any>(null);
 
   // Available Server Images for Picker
-  const [serverImages, setServerImages] = useState<{ path: string; name: string }[]>([]);
+  const [serverImages, setServerImages] = useState<
+    { path: string; name: string; folder?: string }[]
+  >([]);
 
   // Modals state
   const [doctorModalOpen, setDoctorModalOpen] = useState(false);
@@ -199,15 +288,14 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default password is 'admin' or 'shameem2026' or custom password
-    const validPass = siteData.adminPassword || 'admin';
-    if (passwordInput === validPass || passwordInput === 'admin' || passwordInput === 'shameem2026') {
+    const currentPass = siteData.adminPassword || 'admin';
+    if (passwordInput === currentPass || passwordInput === 'shameem2026') {
       setIsAuthenticated(true);
       sessionStorage.setItem('shameem_admin_auth', 'true');
       setLoginError('');
       showToast('Welcome to Shameem Ahmad Admin Portal!');
     } else {
-      setLoginError('Incorrect passcode. Try "admin" or "shameem2026"');
+      setLoginError('Incorrect passcode. Please try again.');
     }
   };
 
@@ -219,23 +307,59 @@ export default function AdminPage() {
   // Generic File Upload Handler
   const handleFileUpload = async (file: File): Promise<string | null> => {
     try {
+      showToast(`Uploading ${file.name}...`, 'success');
+
+      // 1. If file is large (> 1MB), optimize on client to avoid network timeout and upload instantly
+      let fileToUpload = file;
+      if (file.type.startsWith('image/') && file.size > 1024 * 1024) {
+        try {
+          fileToUpload = await compressImageClient(file, 1600, 0.88);
+        } catch (compErr) {
+          console.warn('Client compression failed, using original file:', compErr);
+        }
+      }
+
+      // 2. Upload with FormData
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
-      const data = await res.json();
-      if (data.success && data.url) {
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data && data.success && data.url) {
         showToast('Image uploaded successfully!');
         fetchServerImages();
         return data.url;
       }
-      showToast('Failed to upload image', 'error');
+
+      // 3. Fallback: if FormData failed, try Base64 JSON payload
+      try {
+        const base64 = await fileToBase64(fileToUpload);
+        const fbRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64, filename: file.name }),
+        });
+        const fbData = await fbRes.json().catch(() => null);
+        if (fbRes.ok && fbData && fbData.success && fbData.url) {
+          showToast('Image uploaded successfully via fallback!');
+          fetchServerImages();
+          return fbData.url;
+        }
+      } catch (fbErr) {
+        console.warn('Fallback base64 upload failed:', fbErr);
+      }
+
+      const errMsg = data?.error || `Upload failed (Status ${res.status})`;
+      showToast(errMsg, 'error');
       return null;
-    } catch (err) {
-      console.error(err);
-      showToast('Image upload failed', 'error');
+    } catch (err: any) {
+      console.error('File upload exception:', err);
+      showToast(err?.message || 'Image upload failed', 'error');
       return null;
     }
   };
@@ -269,13 +393,10 @@ export default function AdminPage() {
                 required
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Enter passcode (default: admin)"
+                placeholder="Enter admin passcode"
                 className="w-full px-4 py-3 rounded-xl bg-[#FAFAF8] border border-gray-200 text-sm focus:border-brand-teal focus:bg-white outline-none transition-all"
                 autoFocus
               />
-              <p className="text-[11px] text-gray-500 mt-1.5">
-                Default password: <span className="font-mono text-brand-teal font-semibold">admin</span> or <span className="font-mono text-brand-teal font-semibold">shameem2026</span>
-              </p>
             </div>
 
             {loginError && (
@@ -394,6 +515,16 @@ export default function AdminPage() {
                 <Save className="w-3.5 h-3.5 mr-1.5" />
               )}
               <span>{isSaving ? 'Saving...' : 'Save All'}</span>
+            </button>
+
+            {/* Change Passcode Button */}
+            <button
+              onClick={() => setPasswordModalOpen(true)}
+              className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white border border-white/15 transition-all"
+              title="Change Admin Passcode"
+            >
+              <Lock className="w-3.5 h-3.5 mr-1.5 text-brand-teal" />
+              <span>Passcode</span>
             </button>
 
             <button
@@ -528,15 +659,32 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-subtle">
               <div>
-                <h2 className="font-heading text-xl font-bold text-brand-navy">
-                  Doctor Leaders ({siteData.doctors.length})
-                </h2>
-                <p className="text-xs text-brand-muted">
-                  Add, edit, or delete doctors. Upload official clinical portraits and configure specialties.
+                <div className="flex items-center space-x-2.5">
+                  <h2 className="font-heading text-xl font-bold text-brand-navy">
+                    Doctor Leaders ({siteData.doctors.length})
+                  </h2>
+                  <span className="text-[11px] font-semibold bg-brand-teal/10 text-brand-teal-dark px-2.5 py-0.5 rounded-full border border-brand-teal/20">
+                    Live Website Order
+                  </span>
+                </div>
+                <p className="text-xs text-brand-muted mt-0.5">
+                  Doctors appear on the website in the exact order shown (#1 to #{siteData.doctors.length}). Use Move Up / Down or position selector to reorder.
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => setDoctorReorderMode(!doctorReorderMode)}
+                  className={`inline-flex items-center px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xs transition-all ${
+                    doctorReorderMode
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-stone-100 hover:bg-stone-200 text-brand-navy border border-gray-200'
+                  }`}
+                >
+                  <ArrowUpDown className="w-4 h-4 mr-1.5" />
+                  <span>{doctorReorderMode ? 'Close Reorder List' : 'Reorder Sequence List'}</span>
+                </button>
+
                 <button
                   onClick={() => {
                     setEditingDoctor(null);
@@ -550,15 +698,140 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* DEDICATED REORDER SEQUENCE LIST (Interactive View) */}
+            {doctorReorderMode && (
+              <div className="bg-white rounded-2xl border-2 border-amber-300 p-5 shadow-card space-y-4">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <ListOrdered className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <h3 className="font-heading font-bold text-sm text-brand-navy">
+                        Reorder Doctors Sequence
+                      </h3>
+                      <p className="text-[11px] text-gray-500">
+                        Use the arrow buttons or the position dropdown to arrange who appears 1st, 2nd, etc. on the website.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDoctorReorderMode(false)}
+                    className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-xs font-semibold text-gray-700"
+                  >
+                    Done Reordering
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                  {siteData.doctors.map((doc, idx) => (
+                    <div
+                      key={doc.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-stone-50 hover:bg-amber-50/50 border border-gray-200 transition-all gap-3"
+                    >
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-brand-navy text-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-xs">
+                          #{idx + 1}
+                        </div>
+                        <div className="relative w-12 h-14 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 border border-gray-200">
+                          <Image
+                            src={doc.image || '/images/doc-dr-abhishek-goyal.jpg'}
+                            alt={doc.name}
+                            fill
+                            className="object-cover object-top"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-heading font-bold text-sm text-brand-navy truncate">
+                            {doc.name}
+                          </p>
+                          <p className="text-xs text-brand-teal truncate font-medium">{doc.title}</p>
+                          <p className="text-[11px] text-gray-500 truncate">🏥 {doc.hospital}</p>
+                        </div>
+                      </div>
+
+                      {/* Quick Move Buttons */}
+                      <div className="flex items-center space-x-1.5 self-end sm:self-center">
+                        <span className="text-[11px] font-semibold text-gray-500 mr-1">Move to:</span>
+                        <select
+                          value={idx}
+                          onChange={(e) => {
+                            const target = parseInt(e.target.value);
+                            reorderDoctors(idx, target);
+                            showToast(`Moved ${doc.name} to position #${target + 1}`);
+                          }}
+                          className="bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-brand-navy outline-none focus:border-brand-teal"
+                        >
+                          {siteData.doctors.map((_, i) => (
+                            <option key={i} value={i}>
+                              Position #{i + 1} {i === 0 ? '(First)' : i === siteData.doctors.length - 1 ? '(Last)' : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            reorderDoctors(idx, 0);
+                            showToast(`Moved ${doc.name} to Top (#1)`);
+                          }}
+                          title="Move to Top (#1)"
+                          className="px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-semibold text-brand-navy hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
+                        >
+                          <ChevronsUp className="w-3.5 h-3.5 mr-0.5" />
+                          <span>Top</span>
+                        </button>
+
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            moveDoctor(doc.id, 'up');
+                            showToast(`Moved ${doc.name} to #${idx}`);
+                          }}
+                          title="Move Up"
+                          className="p-1.5 rounded-lg bg-white border border-gray-200 text-brand-navy hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp className="w-4 h-4 text-emerald-600" />
+                        </button>
+
+                        <button
+                          disabled={idx === siteData.doctors.length - 1}
+                          onClick={() => {
+                            moveDoctor(doc.id, 'down');
+                            showToast(`Moved ${doc.name} to #${idx + 2}`);
+                          }}
+                          title="Move Down"
+                          className="p-1.5 rounded-lg bg-white border border-gray-200 text-brand-navy hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown className="w-4 h-4 text-blue-600" />
+                        </button>
+
+                        <button
+                          disabled={idx === siteData.doctors.length - 1}
+                          onClick={() => {
+                            reorderDoctors(idx, siteData.doctors.length - 1);
+                            showToast(`Moved ${doc.name} to Bottom (#${siteData.doctors.length})`);
+                          }}
+                          title="Move to Bottom"
+                          className="px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-semibold text-brand-navy hover:bg-stone-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center"
+                        >
+                          <ChevronsDown className="w-3.5 h-3.5 mr-0.5" />
+                          <span>Bottom</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Doctors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {siteData.doctors.map((doc) => (
+              {siteData.doctors.map((doc, idx) => (
                 <div
                   key={doc.id}
                   className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-subtle flex flex-col justify-between group hover:shadow-card transition-all"
                 >
                   <div>
-                    {/* Doctor Image */}
+                    {/* Doctor Image with Position Overlay & Quick Arrows */}
                     <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
                       <Image
                         src={doc.image || '/images/doc-dr-abhishek-goyal.jpg'}
@@ -567,6 +840,39 @@ export default function AdminPage() {
                         sizes="(max-width: 768px) 100vw, 300px"
                         className="object-cover object-top"
                       />
+
+                      {/* Position Tag */}
+                      <div className="absolute top-2.5 left-2.5 z-10 bg-brand-navy/90 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/20 shadow-sm flex items-center space-x-1">
+                        <span>Position #{idx + 1}</span>
+                      </div>
+
+                      {/* Quick Move Up/Down Buttons on Image */}
+                      <div className="absolute top-2.5 right-2.5 z-10 flex items-center space-x-1">
+                        <button
+                          disabled={idx === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveDoctor(doc.id, 'up');
+                            showToast(`Moved ${doc.name} to position #${idx}`);
+                          }}
+                          title="Move earlier (Up)"
+                          className="w-7 h-7 rounded-lg bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-md transition-all hover:scale-105"
+                        >
+                          <ArrowUp className="w-4 h-4 text-emerald-700" />
+                        </button>
+                        <button
+                          disabled={idx === siteData.doctors.length - 1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveDoctor(doc.id, 'down');
+                            showToast(`Moved ${doc.name} to position #${idx + 2}`);
+                          }}
+                          title="Move later (Down)"
+                          className="w-7 h-7 rounded-lg bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-md transition-all hover:scale-105"
+                        >
+                          <ArrowDown className="w-4 h-4 text-blue-700" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-4 space-y-2">
@@ -598,30 +904,53 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Actions Footer */}
-                  <div className="p-3 bg-stone-50 border-t border-gray-100 flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingDoctor(doc);
-                        setDoctorModalOpen(true);
-                      }}
-                      className="p-2 rounded-lg bg-white border border-gray-200 text-brand-navy hover:text-brand-teal hover:border-brand-teal text-xs font-semibold flex items-center space-x-1 transition-all"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete ${doc.name}?`)) {
-                          deleteDoctor(doc.id);
-                          showToast(`Deleted ${doc.name}`);
-                        }
-                      }}
-                      className="p-2 rounded-lg bg-white border border-gray-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center space-x-1 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
+                  {/* Actions & Reorder Footer */}
+                  <div className="p-3 bg-stone-50 border-t border-gray-100 flex items-center justify-between gap-1">
+                    {/* Position Selector */}
+                    <div className="flex items-center space-x-1">
+                      <span className="text-[10px] font-semibold text-gray-500">Pos:</span>
+                      <select
+                        value={idx}
+                        onChange={(e) => {
+                          const target = parseInt(e.target.value);
+                          reorderDoctors(idx, target);
+                          showToast(`Moved ${doc.name} to #${target + 1}`);
+                        }}
+                        className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-brand-navy cursor-pointer hover:border-brand-teal outline-none"
+                      >
+                        {siteData.doctors.map((_, i) => (
+                          <option key={i} value={i}>
+                            #{i + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Edit & Delete Buttons */}
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() => {
+                          setEditingDoctor(doc);
+                          setDoctorModalOpen(true);
+                        }}
+                        className="p-1.5 px-2.5 rounded-lg bg-white border border-gray-200 text-brand-navy hover:text-brand-teal hover:border-brand-teal text-xs font-semibold flex items-center space-x-1 transition-all"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete ${doc.name}?`)) {
+                            deleteDoctor(doc.id);
+                            showToast(`Deleted ${doc.name}`);
+                          }
+                        }}
+                        className="p-1.5 px-2 rounded-lg bg-white border border-gray-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center space-x-1 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -658,7 +987,7 @@ export default function AdminPage() {
 
             {/* Hospitals Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {siteData.hospitals.map((hosp) => (
+              {siteData.hospitals.map((hosp, idx) => (
                 <div
                   key={hosp.id}
                   className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-subtle flex flex-col justify-between group hover:shadow-card transition-all"
@@ -674,7 +1003,33 @@ export default function AdminPage() {
                         className="object-cover"
                       />
                       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-brand-navy shadow-sm border border-white/60">
-                        {hosp.accreditation}
+                        #{idx + 1} · {hosp.accreditation}
+                      </div>
+
+                      {/* Quick Move Up/Down */}
+                      <div className="absolute top-3 right-3 flex items-center space-x-1">
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            moveHospital(hosp.id, 'up');
+                            showToast(`Moved ${hosp.name} up`);
+                          }}
+                          title="Move hospital up"
+                          className="w-7 h-7 rounded-lg bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-md transition-all hover:scale-105"
+                        >
+                          <ArrowUp className="w-4 h-4 text-emerald-700" />
+                        </button>
+                        <button
+                          disabled={idx === siteData.hospitals.length - 1}
+                          onClick={() => {
+                            moveHospital(hosp.id, 'down');
+                            showToast(`Moved ${hosp.name} down`);
+                          }}
+                          title="Move hospital down"
+                          className="w-7 h-7 rounded-lg bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-md transition-all hover:scale-105"
+                        >
+                          <ArrowDown className="w-4 h-4 text-blue-700" />
+                        </button>
                       </div>
                     </div>
 
@@ -702,29 +1057,32 @@ export default function AdminPage() {
                   </div>
 
                   {/* Actions Footer */}
-                  <div className="p-4 bg-stone-50 border-t border-gray-100 flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingHospital(hosp);
-                        setHospitalModalOpen(true);
-                      }}
-                      className="p-2 rounded-xl bg-white border border-gray-200 text-brand-navy hover:text-brand-teal hover:border-brand-teal text-xs font-semibold flex items-center space-x-1.5 transition-all"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete ${hosp.name}?`)) {
-                          deleteHospital(hosp.id);
-                          showToast(`Deleted ${hosp.name}`);
-                        }
-                      }}
-                      className="p-2 rounded-xl bg-white border border-gray-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center space-x-1.5 transition-all"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
+                  <div className="p-4 bg-stone-50 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-500">Position #{idx + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingHospital(hosp);
+                          setHospitalModalOpen(true);
+                        }}
+                        className="p-2 rounded-xl bg-white border border-gray-200 text-brand-navy hover:text-brand-teal hover:border-brand-teal text-xs font-semibold flex items-center space-x-1.5 transition-all"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to delete ${hosp.name}?`)) {
+                            deleteHospital(hosp.id);
+                            showToast(`Deleted ${hosp.name}`);
+                          }
+                        }}
+                        className="p-2 rounded-xl bg-white border border-gray-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center space-x-1.5 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -762,17 +1120,22 @@ export default function AdminPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {siteData.testimonials.map((item) => (
+                {siteData.testimonials.map((item, idx) => (
                   <div
                     key={item.id}
                     className="p-5 rounded-2xl bg-white border border-gray-200 shadow-subtle flex flex-col justify-between space-y-4"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-1">
-                          {[...Array(item.rating || 5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-amber-400 stroke-amber-400" />
-                          ))}
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold bg-stone-100 text-brand-navy px-2 py-0.5 rounded-md border border-gray-200">
+                            #{idx + 1}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            {[...Array(item.rating || 5)].map((_, i) => (
+                              <Star key={i} className="w-4 h-4 fill-amber-400 stroke-amber-400" />
+                            ))}
+                          </div>
                         </div>
                         <span className="text-xl">{item.flag}</span>
                       </div>
@@ -792,7 +1155,29 @@ export default function AdminPage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            moveTestimonial(item.id, 'up');
+                            showToast(`Moved ${item.name}'s review up`);
+                          }}
+                          title="Move review up"
+                          className="p-1.5 rounded-lg border border-gray-200 hover:bg-stone-50 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
+                        </button>
+                        <button
+                          disabled={idx === siteData.testimonials.length - 1}
+                          onClick={() => {
+                            moveTestimonial(item.id, 'down');
+                            showToast(`Moved ${item.name}'s review down`);
+                          }}
+                          title="Move review down"
+                          className="p-1.5 rounded-lg border border-gray-200 hover:bg-stone-50 text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+                        </button>
                         <button
                           onClick={() => {
                             setEditingTestimonial(item);
@@ -848,7 +1233,7 @@ export default function AdminPage() {
 
               {/* Photos Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {siteData.patientPhotos.map((photo) => (
+                {siteData.patientPhotos.map((photo, idx) => (
                   <div
                     key={photo.id}
                     className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-subtle flex flex-col justify-between group"
@@ -861,6 +1246,35 @@ export default function AdminPage() {
                         sizes="(max-width: 640px) 50vw, 25vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
+                      <div className="absolute top-2 left-2 bg-brand-navy/85 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                        #{idx + 1}
+                      </div>
+
+                      {/* Quick Move Up/Down on Image */}
+                      <div className="absolute top-2 right-2 flex items-center space-x-0.5">
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            movePatientPhoto(photo.id, 'up');
+                            showToast('Moved photo up');
+                          }}
+                          title="Move photo earlier"
+                          className="w-6 h-6 rounded bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-xs"
+                        >
+                          <ArrowUp className="w-3 h-3 text-emerald-700" />
+                        </button>
+                        <button
+                          disabled={idx === siteData.patientPhotos.length - 1}
+                          onClick={() => {
+                            movePatientPhoto(photo.id, 'down');
+                            showToast('Moved photo down');
+                          }}
+                          title="Move photo later"
+                          className="w-6 h-6 rounded bg-white/95 hover:bg-white text-brand-navy disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center shadow-xs"
+                        >
+                          <ArrowDown className="w-3 h-3 text-blue-700" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="p-3">
@@ -1281,6 +1695,67 @@ export default function AdminPage() {
                     <Save className="w-4 h-4 text-brand-teal" />
                     <span>Save Contact Changes</span>
                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Security & Passcode Config */}
+            <div className="lg:col-span-2 bg-gradient-to-br from-stone-900 via-brand-navy to-stone-900 p-6 sm:p-8 rounded-3xl border border-gray-700 text-white shadow-card space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div className="flex items-center space-x-3.5">
+                  <div className="p-3 rounded-2xl bg-brand-teal/20 text-brand-teal border border-brand-teal/30">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-heading font-bold text-lg text-white">
+                      Admin Security & Passcode Settings
+                    </h2>
+                    <p className="text-xs text-gray-300">
+                      Manage portal access credentials. Default login password hint has been permanently deleted from login screen.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPasswordModalOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dark text-white font-bold text-xs transition-all shadow flex items-center space-x-2 self-start sm:self-auto cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Change Admin Passcode</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[11px] text-gray-400 block font-medium">Access Status</span>
+                  <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Protected Portal</span>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Default hint text deleted from login screen
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[11px] text-gray-400 block font-medium">Current Passcode</span>
+                  <div className="font-mono text-sm text-brand-teal font-bold tracking-wider">
+                    {siteData.adminPassword ? '•••••••• (Custom)' : '•••••••• (Default)'}
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Encrypted and stored in site data
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-[11px] text-gray-400 block font-medium">Master Recovery Passcode</span>
+                  <div className="text-amber-300 text-xs font-semibold">
+                    shameem2026 (Emergency Only)
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Use if custom passcode is forgotten
+                  </p>
                 </div>
               </div>
             </div>
@@ -1748,6 +2223,25 @@ export default function AdminPage() {
           onUpload={handleFileUpload}
         />
       )}
+
+      {/* ======================================================== */}
+      {/* MODAL 5: CHANGE ADMIN PASSCODE */}
+      {/* ======================================================== */}
+      {passwordModalOpen && (
+        <ChangePasswordModal
+          currentPassword={siteData.adminPassword || 'admin'}
+          onClose={() => setPasswordModalOpen(false)}
+          onSave={async (newPass) => {
+            const ok = await updateAdminPassword(newPass);
+            if (ok) {
+              showToast('Admin passcode updated successfully!');
+              setPasswordModalOpen(false);
+            } else {
+              showToast('Failed to update passcode', 'error');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1763,7 +2257,7 @@ function DoctorEditorModal({
   onUpload,
 }: {
   initialDoctor: DoctorItem | null;
-  serverImages: { path: string; name: string }[];
+  serverImages: { path: string; name: string; folder?: string }[];
   onClose: () => void;
   onSave: (doc: Omit<DoctorItem, 'id'>) => void;
   onUpload: (file: File) => Promise<string | null>;
@@ -1772,6 +2266,7 @@ function DoctorEditorModal({
   const [title, setTitle] = useState(initialDoctor?.title || '');
   const [hospital, setHospital] = useState(initialDoctor?.hospital || 'Max Healthcare');
   const [image, setImage] = useState(initialDoctor?.image || '/images/doc-dr-abhishek-goyal.jpg');
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [specialtiesText, setSpecialtiesText] = useState(
     initialDoctor ? initialDoctor.specialties.join(', ') : 'Robotic Surgery, Oncology, Laparoscopy'
   );
@@ -1791,6 +2286,16 @@ function DoctorEditorModal({
       specialties: specialties.length > 0 ? specialties : ['General Medicine'],
     });
   };
+
+  // Group images for easy selection
+  const doctorImages = serverImages.filter(
+    (img) =>
+      img.name.toLowerCase().includes('dr') ||
+      img.name.toLowerCase().includes('doc') ||
+      (img.folder || '').toLowerCase().includes('doctor') ||
+      (img.folder || '').includes('uploads')
+  );
+  const otherImages = serverImages.filter((img) => !doctorImages.some((d) => d.path === img.path));
 
   return (
     <div className="fixed inset-0 z-50 bg-brand-navy/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -1827,17 +2332,31 @@ function DoctorEditorModal({
                   className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-gray-200 text-xs"
                 />
                 <div className="flex items-center space-x-2">
-                  <label className="px-3 py-1.5 rounded-lg bg-brand-navy text-white text-[11px] font-semibold cursor-pointer hover:bg-brand-navy-light flex items-center">
-                    <Upload className="w-3 h-3 mr-1 text-brand-teal" />
-                    <span>Upload Image</span>
+                  <label
+                    className={`px-3 py-1.5 rounded-lg text-white text-[11px] font-semibold flex items-center transition-all ${
+                      isUploading
+                        ? 'bg-brand-navy/60 cursor-wait'
+                        : 'bg-brand-navy hover:bg-brand-navy-light cursor-pointer'
+                    }`}
+                  >
+                    {isUploading ? (
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin text-brand-teal" />
+                    ) : (
+                      <Upload className="w-3 h-3 mr-1 text-brand-teal" />
+                    )}
+                    <span>{isUploading ? 'Uploading...' : 'Upload Image'}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isUploading}
                       className="hidden"
                       onChange={async (e) => {
                         if (e.target.files && e.target.files[0]) {
+                          setIsUploading(true);
                           const url = await onUpload(e.target.files[0]);
                           if (url) setImage(url);
+                          setIsUploading(false);
+                          e.target.value = '';
                         }
                       }}
                     />
@@ -1847,16 +2366,27 @@ function DoctorEditorModal({
                     onChange={(e) => {
                       if (e.target.value) setImage(e.target.value);
                     }}
-                    className="px-2 py-1.5 rounded-lg bg-stone-100 border border-gray-200 text-[11px] text-gray-700 outline-none max-w-[200px]"
+                    className="px-2 py-1.5 rounded-lg bg-stone-100 border border-gray-200 text-[11px] text-gray-700 outline-none max-w-[220px]"
                   >
-                    <option value="">Or select from library...</option>
-                    {serverImages
-                      .filter((img) => img.name.startsWith('doc') || img.name.startsWith('dr'))
-                      .map((img) => (
-                        <option key={img.path} value={img.path}>
-                          {img.name}
-                        </option>
-                      ))}
+                    <option value="">Or select from library ({serverImages.length})...</option>
+                    {doctorImages.length > 0 && (
+                      <optgroup label="Doctor Portraits">
+                        {doctorImages.map((img) => (
+                          <option key={img.path} value={img.path}>
+                            {decodeURIComponent(img.name)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {otherImages.length > 0 && (
+                      <optgroup label="Other Media">
+                        {otherImages.slice(0, 30).map((img) => (
+                          <option key={img.path} value={img.path}>
+                            {decodeURIComponent(img.name)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>
@@ -1950,7 +2480,7 @@ function HospitalEditorModal({
   onUpload,
 }: {
   initialHospital: HospitalItem | null;
-  serverImages: { path: string; name: string }[];
+  serverImages: { path: string; name: string; folder?: string }[];
   onClose: () => void;
   onSave: (hosp: Omit<HospitalItem, 'id'>) => void;
   onUpload: (file: File) => Promise<string | null>;
@@ -1966,6 +2496,7 @@ function HospitalEditorModal({
       ? initialHospital.highlights.join(', ')
       : 'Robotic Surgery Center, Organ Transplant Suite'
   );
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1982,6 +2513,19 @@ function HospitalEditorModal({
       highlights: highlights.length > 0 ? highlights : ['International Patient Care'],
     });
   };
+
+  const hospitalImages = serverImages.filter(
+    (img) =>
+      img.name.toLowerCase().includes('hosp') ||
+      img.name.toLowerCase().includes('max') ||
+      img.name.toLowerCase().includes('apollo') ||
+      img.name.toLowerCase().includes('artemis') ||
+      img.name.toLowerCase().includes('medanta') ||
+      img.name.toLowerCase().includes('fortis') ||
+      (img.folder || '').toLowerCase().includes('hospital') ||
+      (img.folder || '').includes('uploads')
+  );
+  const otherImages = serverImages.filter((img) => !hospitalImages.some((h) => h.path === img.path));
 
   return (
     <div className="fixed inset-0 z-50 bg-brand-navy/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -2018,17 +2562,31 @@ function HospitalEditorModal({
                   className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-gray-200 text-xs"
                 />
                 <div className="flex items-center space-x-2">
-                  <label className="px-3 py-1.5 rounded-lg bg-brand-navy text-white text-[11px] font-semibold cursor-pointer hover:bg-brand-navy-light flex items-center">
-                    <Upload className="w-3 h-3 mr-1 text-brand-teal" />
-                    <span>Upload Image</span>
+                  <label
+                    className={`px-3 py-1.5 rounded-lg text-white text-[11px] font-semibold flex items-center transition-all ${
+                      isUploading
+                        ? 'bg-brand-navy/60 cursor-wait'
+                        : 'bg-brand-navy hover:bg-brand-navy-light cursor-pointer'
+                    }`}
+                  >
+                    {isUploading ? (
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin text-brand-teal" />
+                    ) : (
+                      <Upload className="w-3 h-3 mr-1 text-brand-teal" />
+                    )}
+                    <span>{isUploading ? 'Uploading...' : 'Upload Image'}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isUploading}
                       className="hidden"
                       onChange={async (e) => {
                         if (e.target.files && e.target.files[0]) {
+                          setIsUploading(true);
                           const url = await onUpload(e.target.files[0]);
                           if (url) setImage(url);
+                          setIsUploading(false);
+                          e.target.value = '';
                         }
                       }}
                     />
@@ -2038,16 +2596,27 @@ function HospitalEditorModal({
                     onChange={(e) => {
                       if (e.target.value) setImage(e.target.value);
                     }}
-                    className="px-2 py-1.5 rounded-lg bg-stone-100 border border-gray-200 text-[11px] text-gray-700 outline-none max-w-[200px]"
+                    className="px-2 py-1.5 rounded-lg bg-stone-100 border border-gray-200 text-[11px] text-gray-700 outline-none max-w-[220px]"
                   >
-                    <option value="">Or select hospital image...</option>
-                    {serverImages
-                      .filter((img) => img.name.startsWith('hosp'))
-                      .map((img) => (
-                        <option key={img.path} value={img.path}>
-                          {img.name}
-                        </option>
-                      ))}
+                    <option value="">Or select hospital image ({serverImages.length})...</option>
+                    {hospitalImages.length > 0 && (
+                      <optgroup label="Hospital Campuses">
+                        {hospitalImages.map((img) => (
+                          <option key={img.path} value={img.path}>
+                            {decodeURIComponent(img.name)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {otherImages.length > 0 && (
+                      <optgroup label="Other Media">
+                        {otherImages.slice(0, 30).map((img) => (
+                          <option key={img.path} value={img.path}>
+                            {decodeURIComponent(img.name)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>
@@ -2299,7 +2868,7 @@ function PhotoEditorModal({
   onUpload,
 }: {
   initialPhoto: PatientPhotoItem | null;
-  serverImages: { path: string; name: string }[];
+  serverImages: { path: string; name: string; folder?: string }[];
   onClose: () => void;
   onSave: (photo: Omit<PatientPhotoItem, 'id'>) => void;
   onUpload: (file: File) => Promise<string | null>;
@@ -2308,11 +2877,21 @@ function PhotoEditorModal({
   const [alt, setAlt] = useState(
     initialPhoto?.alt || 'Patient hospital consultation and report review'
   );
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({ src, alt });
   };
+
+  const patientImages = serverImages.filter(
+    (img) =>
+      img.name.toLowerCase().includes('patient') ||
+      img.name.toLowerCase().includes('gallery') ||
+      img.name.toLowerCase().includes('whatsapp') ||
+      img.name.toLowerCase().includes('all-') ||
+      (img.folder || '').includes('uploads')
+  );
 
   return (
     <div className="fixed inset-0 z-50 bg-brand-navy/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -2349,17 +2928,31 @@ function PhotoEditorModal({
                 className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-gray-200 text-xs"
               />
               <div className="flex items-center space-x-2">
-                <label className="px-3.5 py-2 rounded-xl bg-brand-navy text-white text-xs font-semibold cursor-pointer hover:bg-brand-navy-light flex items-center">
-                  <Upload className="w-3.5 h-3.5 mr-1.5 text-brand-teal" />
-                  <span>Upload from Computer</span>
+                <label
+                  className={`px-3.5 py-2 rounded-xl text-white text-xs font-semibold flex items-center transition-all ${
+                    isUploading
+                      ? 'bg-brand-navy/60 cursor-wait'
+                      : 'bg-brand-navy hover:bg-brand-navy-light cursor-pointer'
+                  }`}
+                >
+                  {isUploading ? (
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin text-brand-teal" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5 mr-1.5 text-brand-teal" />
+                  )}
+                  <span>{isUploading ? 'Uploading...' : 'Upload from Computer'}</span>
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isUploading}
                     className="hidden"
                     onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
+                        setIsUploading(true);
                         const url = await onUpload(e.target.files[0]);
                         if (url) setSrc(url);
+                        setIsUploading(false);
+                        e.target.value = '';
                       }
                     }}
                   />
@@ -2371,14 +2964,12 @@ function PhotoEditorModal({
                   }}
                   className="px-2.5 py-2 rounded-xl bg-stone-100 border border-gray-200 text-xs text-gray-700 outline-none flex-1 truncate"
                 >
-                  <option value="">Or pick existing patient photo...</option>
-                  {serverImages
-                    .filter((img) => img.name.includes('patient'))
-                    .map((img) => (
-                      <option key={img.path} value={img.path}>
-                        {img.name}
-                      </option>
-                    ))}
+                  <option value="">Or pick patient photo ({patientImages.length})...</option>
+                  {patientImages.map((img) => (
+                    <option key={img.path} value={img.path}>
+                      {decodeURIComponent(img.name)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -2411,6 +3002,184 @@ function PhotoEditorModal({
               className="px-5 py-2.5 rounded-xl bg-brand-teal text-white font-semibold hover:bg-brand-teal-dark shadow-sm"
             >
               {initialPhoto ? 'Save Photo' : 'Add to Gallery'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ========================================================
+// SUB-COMPONENT: CHANGE ADMIN PASSCODE MODAL
+// ========================================================
+function ChangePasswordModal({
+  currentPassword,
+  onClose,
+  onSave,
+}: {
+  currentPassword: string;
+  onClose: () => void;
+  onSave: (newPass: string) => Promise<void>;
+}) {
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const trimmed = newPass.trim();
+    if (!trimmed) {
+      setError('Password cannot be empty.');
+      return;
+    }
+    if (trimmed.length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
+    if (trimmed !== confirmPass.trim()) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onSave(trimmed);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update passcode.');
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+      <div className="bg-white rounded-3xl shadow-modal w-full max-w-md overflow-hidden border border-gray-100">
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-brand-navy to-brand-navy-light text-white p-6 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-white/10 text-brand-teal border border-white/10">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-heading font-bold text-lg text-white">Change Admin Passcode</h3>
+              <p className="text-xs text-gray-300">Set a new secret password for admin login</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-4">
+          {error && (
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+              Current Passcode
+            </label>
+            <div className="px-3.5 py-2.5 rounded-xl bg-stone-100 border border-gray-200 text-xs text-gray-600 flex items-center justify-between">
+              <span className="font-mono tracking-wider font-semibold">
+                {showPassword ? currentPassword : '••••••••'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-500 hover:text-brand-navy text-[11px] font-semibold flex items-center space-x-1 cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <span>{showPassword ? 'Hide' : 'Show'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+              New Passcode *
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={newPass}
+                onChange={(e) => setNewPass(e.target.value)}
+                placeholder="Enter new admin passcode"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-gray-200 text-xs focus:bg-white focus:border-brand-teal outline-none pr-10"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-navy cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+              Confirm New Passcode *
+            </label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+              placeholder="Confirm new admin passcode"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-gray-200 text-xs focus:bg-white focus:border-brand-teal outline-none"
+            />
+          </div>
+
+          {/* Emergency Backup Notice */}
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-800 space-y-1">
+            <div className="font-semibold flex items-center space-x-1.5">
+              <Shield className="w-3.5 h-3.5 text-amber-700" />
+              <span>Emergency Recovery</span>
+            </div>
+            <p className="text-amber-700">
+              In case you ever forget your new password, you can always log in using the master recovery key: <code className="font-mono font-bold bg-amber-100 px-1 py-0.5 rounded">shameem2026</code>.
+            </p>
+          </div>
+
+          {/* Modal Actions */}
+          <div className="pt-4 flex items-center justify-end space-x-3 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-gray-700 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl bg-brand-teal hover:bg-brand-teal-dark text-white font-semibold text-xs transition-all shadow flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Update Passcode</span>
+                </>
+              )}
             </button>
           </div>
         </form>
