@@ -59,7 +59,7 @@ const jsonLdData = {
       name: 'Shameem Ahmad · Medical Interpreter & Patient Coordinator',
       url: 'https://shameemmedinterpreter.com',
       telephone: '+918178300511',
-      email: 'shameemahmadaams@gmail.com',
+      email: 'info@shameemcare.com',
       image: '/images/shameem-hero.jpg',
       priceRange: 'Request Estimate',
       address: {
@@ -85,7 +85,7 @@ const jsonLdData = {
       name: 'Shameem Ahmad',
       jobTitle: 'Medical Interpreter & International Patient Coordinator',
       telephone: '+918178300511',
-      email: 'shameemahmadaams@gmail.com',
+      email: 'info@shameemcare.com',
       sameAs: [
         'https://www.instagram.com/innocent_pathan_000',
         'https://www.threads.net/@innocent_pathan_000',

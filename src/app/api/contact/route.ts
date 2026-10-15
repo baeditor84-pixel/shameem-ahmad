@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             access_key: accessKey,
             subject: `🏥 New Patient Inquiry: ${name} (${country})`,
             from_name: 'Shameem Website Inquiry',
-            to_email: 'shameemahmadaams@gmail.com',
+            to_email: 'info@shameemcare.com',
             Patient_Name: name,
             Country: country,
             Preferred_Language: language,

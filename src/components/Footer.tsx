@@ -166,7 +166,7 @@ export const Footer: React.FC = () => {
             <div className="pt-2 text-xs text-gray-400 space-y-1">
               <p>📍 Delhi NCR, India</p>
               <p>📞 +91 81783 00511 (WhatsApp / Phone / Viber / IMO)</p>
-              <p>✉️ shameemahmadaams@gmail.com</p>
+              <p>✉️ info@shameemcare.com</p>
             </div>
           </div>
 

@@ -134,10 +134,10 @@ export const Contact: React.FC = () => {
                     {t('contact.email')}
                   </p>
                   <a
-                    href={`mailto:${contact.email || 'shameemahmadaams@gmail.com'}`}
+                    href={`mailto:${contact.email || 'info@shameemcare.com'}`}
                     className="font-heading text-sm sm:text-base font-bold text-brand-navy hover:text-brand-teal transition-colors block mt-0.5 break-all"
                   >
-                    {contact.email || 'shameemahmadaams@gmail.com'}
+                    {contact.email || 'info@shameemcare.com'}
                   </a>
                 </div>
               </div>

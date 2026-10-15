@@ -29,7 +29,7 @@ A modern, minimalist, fast, fully responsive website built for **Shameem Ahmad**
    - **Why Choose Me**: 5 key points + quote banner (*"Communication Makes Care Better."*).
    - **Reviews**: Testimonial cards & "Our Patients" photo gallery section.
    - **About**: Bio, spoken languages, served countries, quote (*"Health is the key of happiness."*).
-   - **Contact**: Direct phone/WhatsApp (`+91 81783 00511`), email (`shameemahmadaams@gmail.com`), location, interactive consultation form with medical report file upload & WhatsApp fallback button.
+   - **Contact**: Direct phone/WhatsApp (`+91 81783 00511`), email (`info@shameemcare.com`), location, interactive consultation form with medical report file upload & WhatsApp fallback button.
    - **Footer**: Bio, quick links, social links (Instagram & Threads `@innocent_pathan_000`), medical disclaimer.
 
 4. **SEO & Performance**

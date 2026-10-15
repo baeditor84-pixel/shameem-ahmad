@@ -1673,7 +1673,7 @@ export default function AdminPage() {
                     type="email"
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    placeholder="shameemahmadaams@gmail.com"
+                    placeholder="info@shameemcare.com"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-stone-50 border border-gray-200 text-xs focus:bg-white focus:border-brand-teal outline-none"
                   />
                 </div>

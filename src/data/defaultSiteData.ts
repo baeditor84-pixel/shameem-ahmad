@@ -261,7 +261,7 @@ export const defaultSiteData: SiteData = {
   contact: {
     phone: '+91 81783 00511',
     whatsapp: '918178300511',
-    email: 'shameemahmadaams@gmail.com',
+    email: 'info@shameemcare.com',
     location: 'Delhi NCR, India (Gurugram, Saket, Noida, Faridabad)',
     workingHours: '24/7 International Patient Assistance',
   },
