@@ -166,8 +166,16 @@ export default function AdminPage() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<
-    'doctors' | 'hospitals' | 'patients' | 'settings' | 'inquiries' | 'media' | 'git'
+    'doctors' | 'hospitals' | 'patients' | 'settings' | 'inquiries' | 'media' | 'security' | 'git'
   >('doctors');
+
+  // Dedicated Security Section State
+  const [secNewPass, setSecNewPass] = useState('');
+  const [secConfirmPass, setSecConfirmPass] = useState('');
+  const [secShowPass, setSecShowPass] = useState(false);
+  const [secError, setSecError] = useState('');
+  const [secSuccess, setSecSuccess] = useState('');
+  const [secIsSaving, setSecIsSaving] = useState(false);
 
   // Doctor Reorder Mode
   const [doctorReorderMode, setDoctorReorderMode] = useState<boolean>(false);
@@ -636,6 +644,18 @@ export default function AdminPage() {
           >
             <ImageIcon className="w-4 h-4 text-brand-teal" />
             <span>Image Library ({serverImages.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+              activeTab === 'security'
+                ? 'bg-brand-navy text-white shadow-sm'
+                : 'text-gray-600 hover:bg-stone-100 hover:text-brand-navy'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-brand-teal" />
+            <span>Change Password</span>
           </button>
 
           <button
@@ -1844,7 +1864,223 @@ export default function AdminPage() {
         )}
 
         {/* ======================================================== */}
-        {/* TAB 7: GITHUB & VERCEL AUTO-SYNC */}
+        {/* TAB 7: CHANGE ADMIN PASSCODE & SECURITY */}
+        {/* ======================================================== */}
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-brand-navy via-slate-900 to-brand-navy p-6 sm:p-8 rounded-3xl text-white shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-teal/20 text-brand-teal border border-brand-teal/30 text-xs font-semibold">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Admin Access Security</span>
+                </div>
+                <h2 className="font-heading font-extrabold text-2xl sm:text-3xl tracking-tight">
+                  Change Admin Passcode
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-300 max-w-2xl leading-relaxed">
+                  Apne admin panel ka secret password yahan se change karein. Naya password turant apply ho jata hai aur GitHub & Vercel par auto-sync ho jata hai.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/10 border border-white/10 text-center min-w-[180px]">
+                <span className="text-[11px] text-gray-300 block mb-1">Current Passcode</span>
+                <span className="font-mono text-base font-bold text-brand-teal tracking-widest">
+                  {siteData.adminPassword ? '••••••••' : 'admin'}
+                </span>
+                <span className="text-[10px] text-emerald-300 block mt-1">● Active & Protected</span>
+              </div>
+            </div>
+
+            {/* Change Password Form & Security Info Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Left Column: Interactive Form */}
+              <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-subtle space-y-6">
+                <div className="flex items-center space-x-3 pb-4 border-b border-gray-100">
+                  <div className="p-2.5 rounded-xl bg-brand-navy text-brand-teal">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-bold text-lg text-brand-navy">
+                      Set New Password
+                    </h3>
+                    <p className="text-xs text-brand-muted">
+                      Enter your desired secret passcode below
+                    </p>
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setSecError('');
+                    setSecSuccess('');
+                    const trimmed = secNewPass.trim();
+                    if (!trimmed) {
+                      setSecError('Password cannot be empty.');
+                      return;
+                    }
+                    if (trimmed.length < 4) {
+                      setSecError('Password must be at least 4 characters long.');
+                      return;
+                    }
+                    if (trimmed !== secConfirmPass.trim()) {
+                      setSecError('New password and confirm password do not match.');
+                      return;
+                    }
+
+                    setSecIsSaving(true);
+                    const ok = await updateAdminPassword(trimmed);
+                    setSecIsSaving(false);
+                    if (ok) {
+                      setSecSuccess('Admin password updated successfully! Please remember your new password.');
+                      showToast('Passcode updated & saved to website!');
+                      setSecNewPass('');
+                      setSecConfirmPass('');
+                    } else {
+                      setSecError('Failed to update password. Please try again.');
+                      showToast('Failed to update passcode', 'error');
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  {secError && (
+                    <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{secError}</span>
+                    </div>
+                  )}
+
+                  {secSuccess && (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                      <span>{secSuccess}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+                      Current Active Passcode
+                    </label>
+                    <div className="px-4 py-3 rounded-xl bg-stone-100 border border-gray-200 text-xs text-gray-700 flex items-center justify-between">
+                      <span className="font-mono tracking-widest font-bold text-sm">
+                        {secShowPass ? (siteData.adminPassword || 'admin') : '••••••••'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSecShowPass(!secShowPass)}
+                        className="text-gray-500 hover:text-brand-navy text-xs font-semibold flex items-center space-x-1 cursor-pointer"
+                      >
+                        {secShowPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <span>{secShowPass ? 'Hide' : 'Reveal'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+                      New Passcode *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={secShowPass ? 'text' : 'password'}
+                        required
+                        value={secNewPass}
+                        onChange={(e) => setSecNewPass(e.target.value)}
+                        placeholder="Type new passcode (min. 4 characters)"
+                        className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-gray-200 text-sm focus:bg-white focus:border-brand-teal outline-none pr-12 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSecShowPass(!secShowPass)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-navy cursor-pointer"
+                      >
+                        {secShowPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-brand-navy mb-1.5">
+                      Confirm New Passcode *
+                    </label>
+                    <input
+                      type={secShowPass ? 'text' : 'password'}
+                      required
+                      value={secConfirmPass}
+                      onChange={(e) => setSecConfirmPass(e.target.value)}
+                      placeholder="Re-type new passcode to confirm"
+                      className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-gray-200 text-sm focus:bg-white focus:border-brand-teal outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={secIsSaving}
+                      className="w-full py-3.5 bg-brand-navy hover:bg-brand-navy-light text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                    >
+                      {secIsSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-brand-teal" />
+                          <span>Saving New Passcode...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 text-brand-teal" />
+                          <span>Update & Save Admin Passcode</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Right Column: Security Guidelines & Emergency Key */}
+              <div className="lg:col-span-5 space-y-5">
+                {/* Emergency Recovery Card */}
+                <div className="bg-amber-50/90 border border-amber-200 rounded-3xl p-6 space-y-3">
+                  <div className="flex items-center space-x-2.5 text-amber-900 font-bold text-sm">
+                    <Shield className="w-5 h-5 text-amber-700" />
+                    <span>Emergency Master Recovery Key</span>
+                  </div>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Agar aap apna naya password bhool bhi jaate hain, toh tension lene ki zaroorat nahi hai. Master recovery passcode se aap kisi bhi waqt admin panel unlock kar sakte hain:
+                  </p>
+                  <div className="p-3 bg-white/80 rounded-xl border border-amber-200 font-mono text-center text-sm font-bold text-amber-900 tracking-wider">
+                    shameem2026
+                  </div>
+                </div>
+
+                {/* Privacy Confirmation Card */}
+                <div className="bg-white rounded-3xl p-6 border border-gray-200 shadow-subtle space-y-3">
+                  <div className="flex items-center space-x-2.5 text-brand-navy font-bold text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span>Login Screen Privacy</span>
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    Login page se <strong>&ldquo;Default password: admin or shameem2026&rdquo;</strong> ka text permanently remove kar diya gaya hai. Ab koi bhi external user ya visitor aapka password nahi dekh sakta.
+                  </p>
+                  <div className="pt-2">
+                    <Link
+                      href="/"
+                      target="_blank"
+                      className="text-xs font-semibold text-brand-teal hover:underline inline-flex items-center"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                      <span>Test Public Site in New Tab</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* TAB 8: GITHUB & VERCEL AUTO-SYNC */}
         {/* ======================================================== */}
         {activeTab === 'git' && (
           <div className="space-y-6">
