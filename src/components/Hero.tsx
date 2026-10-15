@@ -3,11 +3,15 @@
 import React from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSiteContent } from '@/context/SiteContentContext';
 import { MessageSquareHeart, Calendar, CheckCircle2, Award, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Hero: React.FC = () => {
   const { t } = useLanguage();
+  const { siteData } = useSiteContent();
+  const hero = siteData.hero;
+  const whatsappNumber = siteData.contact.whatsapp || '918178300511';
 
   return (
     <section className="relative overflow-hidden pt-10 pb-16 md:pt-16 md:pb-24 bg-gradient-to-b from-white via-[#FAFAF8] to-stone-50">
@@ -27,23 +31,23 @@ export const Hero: React.FC = () => {
             {/* Tagline Badge */}
             <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-brand-teal-light/60 border border-brand-teal/20 text-brand-teal-dark text-xs sm:text-sm font-semibold">
               <ShieldCheck className="w-4 h-4 text-brand-teal" />
-              <span>{t('hero.tagline')}</span>
+              <span>{hero.tagline || t('hero.tagline')}</span>
             </div>
 
             {/* Main Headline */}
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold text-brand-navy leading-tight sm:leading-tight">
-              {t('hero.headline')}
+              {hero.headline || t('hero.headline')}
             </h1>
 
             {/* Subline */}
             <p className="text-lg sm:text-xl text-brand-muted font-normal leading-relaxed max-w-2xl">
-              {t('hero.subline')}
+              {hero.subline || t('hero.subline')}
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 pt-2">
               <a
-                href="https://wa.me/918178300511"
+                href={`https://wa.me/${whatsappNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl text-base font-semibold bg-brand-teal text-white shadow-subtle hover:bg-brand-teal-dark hover:shadow-card hover:-translate-y-0.5 transition-all duration-200"
@@ -80,16 +84,28 @@ export const Hero: React.FC = () => {
             {/* Quick stats / Highlights */}
             <div className="grid grid-cols-3 gap-4 pt-4 text-left">
               <div className="p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-gray-200/60">
-                <p className="text-2xl font-bold font-heading text-brand-navy">3+</p>
-                <p className="text-xs text-brand-muted font-medium">Fluent Languages</p>
+                <p className="text-2xl font-bold font-heading text-brand-navy">
+                  {hero.statLanguages ? hero.statLanguages.split(' ')[0] : '3+'}
+                </p>
+                <p className="text-xs text-brand-muted font-medium">
+                  {hero.statLanguages ? hero.statLanguages.replace(/^[0-9+%/]+ /, '') || 'Fluent Languages' : 'Fluent Languages'}
+                </p>
               </div>
               <div className="p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-gray-200/60">
-                <p className="text-2xl font-bold font-heading text-brand-navy">6+</p>
-                <p className="text-xs text-brand-muted font-medium">Top Hospital Networks</p>
+                <p className="text-2xl font-bold font-heading text-brand-navy">
+                  {hero.statHospitals ? hero.statHospitals.split(' ')[0] : '6+'}
+                </p>
+                <p className="text-xs text-brand-muted font-medium">
+                  {hero.statHospitals ? hero.statHospitals.replace(/^[0-9+%/]+ /, '') || 'Top Hospital Networks' : 'Top Hospital Networks'}
+                </p>
               </div>
               <div className="p-3 bg-white/70 backdrop-blur-sm rounded-xl border border-gray-200/60">
-                <p className="text-2xl font-bold font-heading text-brand-navy">100%</p>
-                <p className="text-xs text-brand-muted font-medium">Confidential & Direct</p>
+                <p className="text-2xl font-bold font-heading text-brand-navy">
+                  {hero.statConfidential ? hero.statConfidential.split(' ')[0] : '100%'}
+                </p>
+                <p className="text-xs text-brand-muted font-medium">
+                  {hero.statConfidential ? hero.statConfidential.replace(/^[0-9+%/]+ /, '') || 'Confidential & Direct' : 'Confidential & Direct'}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -103,7 +119,7 @@ export const Hero: React.FC = () => {
           >
             <div className="relative w-full max-w-md aspect-[4/5] rounded-3xl overflow-hidden border border-gray-200/90 shadow-card group">
               <Image
-                src="/images/shameem-hero.jpg"
+                src={hero.portraitImage || '/images/shameem-hero.jpg'}
                 alt={t('hero.portraitAlt')}
                 fill
                 priority

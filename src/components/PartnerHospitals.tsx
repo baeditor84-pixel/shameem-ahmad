@@ -3,64 +3,14 @@
 import React from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSiteContent } from '@/context/SiteContentContext';
 import { Building2, MapPin, Award, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface Hospital {
-  name: string;
-  location: string;
-  image: string;
-  accreditation: string;
-  highlights: string[];
-}
-
-const hospitals: Hospital[] = [
-  {
-    name: 'Max Healthcare',
-    location: 'Saket, SmartCity, Gurugram',
-    image: '/images/hosp-max.jpg',
-    accreditation: 'JCI & NABH Accredited',
-    highlights: ['Robotic Surgery Center', 'Organ Transplant Suite'],
-  },
-  {
-    name: 'Artemis Hospitals',
-    location: 'Gurugram, Delhi NCR',
-    image: '/images/hosp-artemis.jpg',
-    accreditation: 'JCI Accredited',
-    highlights: ['International Patient Lounge', 'Oncology Institute'],
-  },
-  {
-    name: 'Fortis Hospital',
-    location: 'Vasant Kunj & Gurgaon',
-    image: '/images/hosp-fortis..jpg',
-    accreditation: 'JCI & NABH Accredited',
-    highlights: ['Bone Marrow Unit', 'Advanced Cardiology'],
-  },
-  {
-    name: 'Apollo Hospitals',
-    location: 'Sarita Vihar, New Delhi',
-    image: '/images/hosp-apollo.jpg',
-    accreditation: 'JCI Accredited',
-    highlights: ['Proton Therapy Center', 'Pediatric Surgery'],
-  },
-  {
-    name: 'Medanta - The Medicity',
-    location: 'Gurugram, Delhi NCR',
-    image: '/images/hosp-medanta.jpg',
-    accreditation: 'JCI & NABH Accredited',
-    highlights: ['Multi-Organ Transplant', 'CyberKnife Radiosurgery'],
-  },
-  {
-    name: 'Yatharth Super Speciality Hospital',
-    location: 'Faridabad & Noida Extension',
-    image: '/images/hosp-yatharth.jpg',
-    accreditation: 'NABH Super Speciality',
-    highlights: ['ENT & Skull Base', 'Neurosurgery & Spine'],
-  },
-];
-
 export const PartnerHospitals: React.FC = () => {
   const { t } = useLanguage();
+  const { siteData } = useSiteContent();
+  const hospitalsList = siteData.hospitals || [];
 
   return (
     <section id="hospitals" className="py-16 md:py-24 bg-white border-t border-b border-gray-200/60">
@@ -82,7 +32,7 @@ export const PartnerHospitals: React.FC = () => {
 
         {/* Large, Clear Hospital Card Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {hospitals.map((hosp, idx) => (
+          {hospitalsList.map((hosp, idx) => (
             <motion.div
               key={hosp.name}
               initial={{ opacity: 0, y: 20 }}

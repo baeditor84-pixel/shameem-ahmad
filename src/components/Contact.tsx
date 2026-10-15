@@ -2,12 +2,15 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSiteContent } from '@/context/SiteContentContext';
 import { specialtiesData } from '@/data/specialties';
 import { Phone, Mail, MapPin, Send, Upload, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Contact: React.FC = () => {
   const { language, t } = useLanguage();
+  const { siteData } = useSiteContent();
+  const contact = siteData.contact;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -58,13 +61,14 @@ export const Contact: React.FC = () => {
 
   const handleWhatsappFallback = () => {
     const effectiveSpecialty = getEffectiveSpecialty();
+    const whatsappNum = contact.whatsapp || '918178300511';
     const text = encodeURIComponent(
       `Hello Shameem! My name is ${formData.name || 'Patient'} from ${formData.country || 'International'}.\n` +
       `Preferred Language: ${formData.language}\n` +
       `Specialty Needed: ${effectiveSpecialty}\n` +
       `Message: ${formData.message}`
     );
-    window.open(`https://wa.me/918178300511?text=${text}`, '_blank');
+    window.open(`https://wa.me/${whatsappNum}?text=${text}`, '_blank');
   };
 
   return (
@@ -101,14 +105,14 @@ export const Contact: React.FC = () => {
                     {t('contact.phone')}
                   </p>
                   <a
-                    href="tel:+918178300511"
+                    href={`tel:${contact.phone || '+918178300511'}`}
                     className="font-heading text-lg font-bold text-brand-navy hover:text-brand-teal transition-colors block mt-0.5"
                   >
-                    +91 81783 00511
+                    {contact.phone || '+91 81783 00511'}
                   </a>
                   <div className="flex items-center space-x-3 mt-2 text-xs font-medium text-brand-teal">
                     <a
-                      href="https://wa.me/918178300511"
+                      href={`https://wa.me/${contact.whatsapp || '918178300511'}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:underline flex items-center"
@@ -130,10 +134,10 @@ export const Contact: React.FC = () => {
                     {t('contact.email')}
                   </p>
                   <a
-                    href="mailto:shameemahmadaams@gmail.com"
+                    href={`mailto:${contact.email || 'shameemahmadaams@gmail.com'}`}
                     className="font-heading text-sm sm:text-base font-bold text-brand-navy hover:text-brand-teal transition-colors block mt-0.5 break-all"
                   >
-                    shameemahmadaams@gmail.com
+                    {contact.email || 'shameemahmadaams@gmail.com'}
                   </a>
                 </div>
               </div>
@@ -148,7 +152,7 @@ export const Contact: React.FC = () => {
                     {t('contact.location')}
                   </p>
                   <p className="text-sm font-semibold text-brand-navy mt-0.5">
-                    {t('contact.locationValue')}
+                    {contact.location || t('contact.locationValue')}
                   </p>
                 </div>
               </div>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useLanguage, Language } from '@/context/LanguageContext';
-import { Globe, Menu, X, MessageSquareHeart } from 'lucide-react';
+import { Globe, Menu, X, MessageSquareHeart, Shield } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -77,6 +77,15 @@ export const Header: React.FC = () => {
               <MessageSquareHeart className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
               <span>{t('nav.whatsapp')}</span>
             </a>
+
+            {/* Admin Panel button */}
+            <Link
+              href="/admin"
+              title="Admin Panel"
+              className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:text-brand-navy hover:bg-gray-100 transition-colors"
+            >
+              <Shield className="w-4 h-4 text-brand-teal" />
+            </Link>
           </div>
 
           {/* Mobile menu toggle button */}

@@ -3,74 +3,14 @@
 import React from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSiteContent } from '@/context/SiteContentContext';
 import { Stethoscope, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface Doctor {
-  name: string;
-  title: string;
-  hospital: string;
-  specialties: string[];
-  image: string;
-}
-
-const doctors: Doctor[] = [
-  {
-    name: 'Dr. Abhishek Goyal',
-    title: 'Consultant, General & Minimally Invasive Surgery',
-    hospital: 'Max Healthcare',
-    specialties: [
-      'Laparoscopic Surgery',
-      'GI Surgery',
-      'Hernia Surgery',
-      'Gallbladder Surgery',
-      'Advanced Surgical Care',
-    ],
-    image: '/images/doc-dr-abhishek-goyal.jpg',
-  },
-  {
-    name: 'Dr. Siddhartha S. Shrivastava',
-    title: 'Consultant, ENT (Ear, Nose and Throat)',
-    hospital: 'Max Healthcare',
-    specialties: [
-      'ENT & Skull Base Surgery',
-      'Hearing & Balance Disorders',
-      'Rhinology & Sinus Surgery',
-      'Voice & Throat Care',
-      'Head & Neck Surgery',
-    ],
-    image: '/images/doc-dr-siddhartha-shrivastava.jpg',
-  },
-  {
-    name: 'Dr. Anil Prasad Bhatt',
-    title: 'Director & Head, Nephrology & Kidney Transplant',
-    hospital: 'Max Healthcare',
-    specialties: [
-      'Kidney Transplantation',
-      'Dialysis Care',
-      'Chronic Kidney Disease',
-      'Renal Replacement Therapy',
-      'Hypertension & Nephrology',
-    ],
-    image: '/images/doc-dr-anil-prasad-bhatt.jpg',
-  },
-  {
-    name: 'Dr. Saumya Saxena',
-    title: 'Consultant, Surgical Oncology & Cancer Care',
-    hospital: 'Max Healthcare',
-    specialties: [
-      'Surgical Oncology',
-      'Breast Cancer Care',
-      'Gynecologic Oncology',
-      'Minimally Invasive Tumor Excision',
-      'Cancer Staging & Biopsy',
-    ],
-    image: '/images/doc-dr-saumya-saxena.jpg',
-  },
-];
-
 export const DoctorsSection: React.FC = () => {
   const { t } = useLanguage();
+  const { siteData } = useSiteContent();
+  const doctorsList = siteData.doctors || [];
 
   return (
     <section id="doctors" className="py-16 md:py-24 bg-[#FAFAF8]">
@@ -89,9 +29,9 @@ export const DoctorsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* 4 Distinct Doctor Cards Grid / Mobile Scroll */}
+        {/* Doctor Cards Grid / Mobile Scroll */}
         <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 overflow-x-auto hide-scrollbar snap-x pb-4 md:pb-0">
-          {doctors.map((doc, idx) => (
+          {doctorsList.map((doc, idx) => (
             <motion.div
               key={doc.name}
               initial={{ opacity: 0, y: 20 }}

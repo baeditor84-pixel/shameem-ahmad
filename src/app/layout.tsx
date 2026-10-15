@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { SiteContentProvider } from '@/context/SiteContentContext';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://shameemmedinterpreter.com'),
@@ -107,7 +108,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-[#FAFAF8] text-brand-text">
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <SiteContentProvider>{children}</SiteContentProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -130,6 +130,14 @@ export const Footer: React.FC = () => {
                   {t('nav.contact')}
                 </a>
               </li>
+              <li className="pt-2 border-t border-white/10">
+                <a
+                  href="/admin"
+                  className="inline-flex items-center text-xs font-semibold text-brand-teal hover:text-white transition-colors"
+                >
+                  ⚙️ Admin Panel
+                </a>
+              </li>
             </ul>
           </div>
 
