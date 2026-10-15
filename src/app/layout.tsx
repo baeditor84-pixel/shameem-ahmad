@@ -5,7 +5,7 @@ import { SiteContentProvider } from '@/context/SiteContentContext';
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://shameemmedinterpreter.com'),
+  metadataBase: new URL('https://www.shameemcare.com'),
   title: 'Shameem Ahmad · Medical Interpreter & Patient Coordinator in Delhi NCR',
   description:
     'Professional Russian, Nepali & English medical interpreter for international patients at Delhi NCR top hospitals (Max, Artemis, Fortis, Apollo, Medanta, Yatharth). Direct hospital coordination, report translation, and visa invitation support.',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: 'Shameem Ahmad · Medical Interpreter & Patient Coordinator in Delhi NCR',
     description:
       'Russian, Nepali & English medical interpreter for international patients at Delhi top hospitals. Clear Communication. Better Care.',
-    url: 'https://shameemmedinterpreter.com',
+    url: 'https://www.shameemcare.com',
     siteName: 'Shameem Ahmad Medical Interpreter',
     images: [
       {
@@ -56,9 +56,9 @@ const jsonLdData = {
   '@graph': [
     {
       '@type': 'MedicalBusiness',
-      '@id': 'https://shameemmedinterpreter.com/#business',
+      '@id': 'https://www.shameemcare.com/#business',
       name: 'Shameem Ahmad · Medical Interpreter & Patient Coordinator',
-      url: 'https://shameemmedinterpreter.com',
+      url: 'https://www.shameemcare.com',
       telephone: '+918178300511',
       email: 'info@shameemcare.com',
       image: '/images/shameem-hero.jpg',
@@ -82,7 +82,7 @@ const jsonLdData = {
     },
     {
       '@type': 'Person',
-      '@id': 'https://shameemmedinterpreter.com/#person',
+      '@id': 'https://www.shameemcare.com/#person',
       name: 'Shameem Ahmad',
       jobTitle: 'Medical Interpreter & International Patient Coordinator',
       telephone: '+918178300511',
